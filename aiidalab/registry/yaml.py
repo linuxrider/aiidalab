@@ -9,25 +9,38 @@ from ruamel.yaml import YAML
 REQUESTS = cachecontrol.CacheControl(requests.Session())
 
 
-class JsonYamlLoader(jsonref.JsonLoader):
-    safe_yaml = YAML(typ="safe")
+# class JsonYamlLoader(jsonref.JsonLoader):
+#     safe_yaml = YAML(typ="safe")
 
-    def __call__(self, uri, **kwargs):
-        uri_split = urlsplit(uri)
-        if Path(uri_split.path).suffix in (".yml", ".yaml"):
-            if uri_split.scheme == "file":
-                content = Path(uri_split.path).read_bytes()
-            else:
-                response = REQUESTS.get(uri)
-                response.raise_for_status()
-                content = response.content
-            return self.safe_yaml.load(content)
+#     def __call__(self, uri, **kwargs):
+#         uri_split = urlsplit(uri)
+#         if Path(uri_split.path).suffix in (".yml", ".yaml"):
+#             if uri_split.scheme == "file":
+#                 content = Path(uri_split.path).read_bytes()
+#             else:
+#                 response = REQUESTS.get(uri)
+#                 response.raise_for_status()
+#                 content = response.content
+#             return self.safe_yaml.load(content)
+#         else:
+#             return super().__call__(uri, **kwargs)
+
+
+# json_yaml_loader = JsonYamlLoader()
+
+def json_yaml_loader(uri, **kwargs):
+    uri_split = urlsplit(uri)
+    if Path(uri_split.path).suffix in (".yml", ".yaml"):
+        safe_yaml = YAML(typ="safe")
+        if uri_split.scheme == "file":
+            content = Path(uri_split.path).read_bytes()
         else:
-            return super().__call__(uri, **kwargs)
-
-
-json_yaml_loader = JsonYamlLoader()
-
+            response = REQUESTS.get(uri)
+            response.raise_for_status()
+            content = response.content
+        return safe_yaml.load(content)
+    else:
+        return jsonref.jsonloader(uri, **kwargs)
 
 def replace_refs(obj):
     """Dereference all references in obj.
